@@ -1,6 +1,6 @@
 
 async function getSteamAuthCode(secret) {
-    // base64解码
+    // base64解码转key node没有crypto自己想别的办法
     const b64key = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     secret = secret.replace(/[^A-Za-z0-9\+\/\=]/g,"");
     const padding = secret.includes("=") ? secret.length - secret.indexOf("=") : 0
@@ -17,13 +17,12 @@ async function getSteamAuthCode(secret) {
         if (enc3 != 64) uarray[j++] = ((enc2 & 15) << 4) | (enc3 >> 2);
         if (enc4 != 64) uarray[j++] = ((enc3 & 3) << 6) | enc4;
     }
-    let secretU8 = Uint8Array.from(buf, c => c.charCodeAt(0));
+    let key = await crypto.subtle.importKey('raw', buf, {name: "HMAC", hash: "SHA-1"}, false, ["sign"]);
+    console.log('key', key);
 
-    // 时间
+    // 时间 这下面的每30秒更新一次
     let timeIndexU32 = new DataView(new ArrayBuffer(8));
     timeIndexU32.setUint32(4, Math.floor(Date.now() / 30000), false);
-
-    let key = await crypto.subtle.importKey('raw', secretU8, {name: "HMAC", hash: "SHA-1"}, false, ["sign"]);
     let hmac = await crypto.subtle.sign('HMAC', key, timeIndexU32);
     hmac = new DataView(hmac);
 
@@ -37,9 +36,10 @@ async function getSteamAuthCode(secret) {
         authCode += chars.charAt(rawCode % chars.length);
         rawCode /= chars.length;
     }
+    console.log('authCode', authCode);
     return authCode;
 }
 
-// 在quickjs测试通过 但不await拿不到值的
-let out = getSteamAuthCode('4pyTIMOgIGxhIG1vZGU=');
-console.log(out);
+getSteamAuthCode('4pyTIMOgIGxhIG1vZGU=').then(function (authCode){
+    console.log(authCode)
+});
