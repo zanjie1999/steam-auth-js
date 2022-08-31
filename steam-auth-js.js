@@ -23,8 +23,7 @@ async function getSteamAuthCode(secret) {
     let timeIndexU32 = new DataView(new ArrayBuffer(8));
     timeIndexU32.setUint32(4, Math.floor(Date.now() / 30000), false);
 
-    let algo = {name: "HMAC", hash: "SHA-1"};
-    let key = await crypto.subtle.importKey('raw', secretU8, algo, false, ["sign"]);
+    let key = await crypto.subtle.importKey('raw', secretU8, {name: "HMAC", hash: "SHA-1"}, false, ["sign"]);
     let hmac = await crypto.subtle.sign('HMAC', key, timeIndexU32);
     hmac = new DataView(hmac);
 
